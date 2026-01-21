@@ -11,7 +11,7 @@ const app = express();
 
 // 🔥 MIDDLEWARE ORDER (IMPORTANT)
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5173", "https://grand-oasis.vercel.app/home"],
   methods : ["GET","POST","PUT","DELETE"],
   credentials : true
 }));

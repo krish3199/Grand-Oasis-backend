@@ -1,9 +1,11 @@
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, otp) => {
+  console.log("📧 Attempting to send OTP email to:", email);
+  
   // BREVO SMTP Configuration
   if (!process.env.BREVO_API_KEY) {
-    console.warn("BREVO_API_KEY not set, skipping email.");
+    console.error("❌ BREVO_API_KEY not set in environment variables!");
     return;
   }
 
@@ -12,9 +14,11 @@ const sendEmail = async (email, otp) => {
   const senderEmail = process.env.BREVO_SENDER_EMAIL;
   
   if (!senderEmail) {
-    console.warn("BREVO_SENDER_EMAIL not set, skipping email.");
+    console.error("❌ BREVO_SENDER_EMAIL not set in environment variables!");
     return;
   }
+
+  console.log("✅ BREVO config found. Sender:", senderEmail);
 
   const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
@@ -95,14 +99,30 @@ const sendEmail = async (email, otp) => {
     );
 
     await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ OTP email sent to ${email}`);
+    console.log(`✅ OTP email successfully sent to ${email}`);
+    return true;
   } catch (error) {
-    console.error("❌ Email sending failed:", error.message || error);
-    // Don't throw - email failure shouldn't break the flow
+    console.error("❌ Email sending failed!");
+    console.error("Error message:", error.message || error);
+    console.error("Error code:", error.code);
+    console.error("Error command:", error.command);
+    
     // Log detailed error for debugging
     if (error.response) {
-      console.error("BREVO Error Response:", error.response);
+      console.error("BREVO Error Response:", JSON.stringify(error.response, null, 2));
     }
+    
+    // Common error messages
+    if (error.message?.includes('Invalid login')) {
+      console.error("🔴 BREVO Authentication failed! Check:");
+      console.error("   1. BREVO_SENDER_EMAIL is verified in BREVO dashboard");
+      console.error("   2. BREVO_API_KEY is correct");
+    }
+    if (error.message?.includes('timeout')) {
+      console.error("🔴 Email timeout! BREVO server might be slow or unreachable");
+    }
+    
+    return false;
   }
 };
 

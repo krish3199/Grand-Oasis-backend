@@ -110,10 +110,18 @@ exports.forgotPassword = async (req, res) => {
 
     // Send email in background (completely non-blocking)
     // Use setImmediate to ensure response is sent first
-    setImmediate(() => {
-      sendEmail(email, otp).catch((err) => {
+    setImmediate(async () => {
+      try {
+        const emailSent = await sendEmail(email, otp);
+        if (emailSent) {
+          console.log(`✅ OTP email sent successfully to ${email}`);
+        } else {
+          console.error(`❌ Failed to send OTP email to ${email}`);
+        }
+      } catch (err) {
         console.error("OTP EMAIL ERROR (background):", err.message || err);
-      });
+        console.error("Full error:", err);
+      }
     });
 
   } catch (error) {

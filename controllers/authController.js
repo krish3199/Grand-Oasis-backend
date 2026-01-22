@@ -102,15 +102,18 @@ exports.forgotPassword = async (req, res) => {
     user.otpExpire = Date.now() + 5 * 60 * 1000;
     await user.save();
 
-    // Send email (non-blocking - don't wait for it)
-    sendEmail(email, otp).catch((err) => {
-      console.error("OTP EMAIL ERROR (non-blocking):", err);
-    });
-
-    // Return response immediately
+    // Return response IMMEDIATELY - don't wait for email
     res.json({
       success: true,
       message: "OTP sent to email"
+    });
+
+    // Send email in background (completely non-blocking)
+    // Use setImmediate to ensure response is sent first
+    setImmediate(() => {
+      sendEmail(email, otp).catch((err) => {
+        console.error("OTP EMAIL ERROR (background):", err.message || err);
+      });
     });
 
   } catch (error) {

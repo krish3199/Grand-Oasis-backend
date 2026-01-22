@@ -24,22 +24,23 @@ const sendEmail = async (email, otp) => {
       user: senderEmail, // Verified sender email from BREVO
       pass: process.env.BREVO_API_KEY, // BREVO SMTP API key
     },
-    // Connection timeout
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 5000,
+    // Reduced timeouts for faster failure
+    connectionTimeout: 3000, // 3 seconds
+    greetingTimeout: 3000,
+    socketTimeout: 3000,
+    // Don't wait for connection to close
+    pool: false,
   });
 
   try {
-    await transporter.sendMail({
+    const mailOptions = {
       // 🔥 SENDER NAME
       from: `"Grand Oasis" <${senderEmail}>`,
       to: email,
       // 🔥 Subject
       subject: 'Reset your password | GRAND OASIS',
-
-    // 🔥 PREMIUM UI WITH YOUR EXACT LOGO
-    html: `
+      // 🔥 PREMIUM UI WITH YOUR EXACT LOGO
+      html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px;">
         
         <!-- Main Card -->
@@ -85,11 +86,23 @@ const sendEmail = async (email, otp) => {
         </div>
       </div>
     `,
-    });
+    };
+
+    // Send with timeout promise
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email timeout')), 5000)
+    );
+
+    await Promise.race([sendPromise, timeoutPromise]);
     console.log(`✅ OTP email sent to ${email}`);
   } catch (error) {
-    console.error("❌ Email sending failed:", error.message);
+    console.error("❌ Email sending failed:", error.message || error);
     // Don't throw - email failure shouldn't break the flow
+    // Log detailed error for debugging
+    if (error.response) {
+      console.error("BREVO Error Response:", error.response);
+    }
   }
 };
 

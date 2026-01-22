@@ -11,9 +11,9 @@ const app = express();
 
 // 🔥 MIDDLEWARE ORDER (IMPORTANT)
 app.use(cors({
-  origin: ["http://localhost:5173", "https://grand-oasis.vercel.app/home" , "https://grand-oasis.netlify.app/home"],
-  methods : ["GET","POST","PUT","DELETE"],
-  credentials : true
+  origin: ["http://localhost:5173", "https://grand-oasis.vercel.app/home", "https://grand-oasis.netlify.app/home"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());

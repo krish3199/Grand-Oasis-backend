@@ -1,17 +1,29 @@
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, otp) => {
+  // BREVO SMTP Configuration
+  if (!process.env.BREVO_API_KEY) {
+    console.warn("BREVO_API_KEY not set, skipping email.");
+    return;
+  }
+
+  // Extract email from BREVO API key (format: xsmtpsib-...@smtp-relay.brevo.com)
+  // Or use a verified sender email from BREVO dashboard
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@brevo.com";
+
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASS
-    }
+      user: senderEmail,
+      pass: process.env.BREVO_API_KEY, // BREVO API key as password
+    },
   });
 
   await transporter.sendMail({
     // 🔥 SENDER NAME
-    from: '"Grand Oasis" <grandoasis99@gmail.com>',
+    from: `"Grand Oasis" <${senderEmail}>`,
 
     to: email,
 

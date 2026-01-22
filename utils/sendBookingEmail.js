@@ -13,16 +13,21 @@ const sendBookingEmail = async ({
   bookingId,
   hotelImage,
 }) => {
-  if (!process.env.EMAIL || !process.env.EMAIL_PASS) {
-    console.warn("EMAIL or EMAIL_PASS env vars not set, skipping booking email.");
+  // BREVO SMTP Configuration
+  if (!process.env.BREVO_API_KEY) {
+    console.warn("BREVO_API_KEY not set, skipping booking email.");
     return;
   }
 
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@brevo.com";
+
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASS,
+      user: senderEmail,
+      pass: process.env.BREVO_API_KEY, // BREVO API key as password
     },
   });
 
@@ -125,7 +130,7 @@ const sendBookingEmail = async ({
   // --- NEW PREMIUM UI TEMPLATE END ---
 
   await transporter.sendMail({
-    from: `"Grand Oasis" <${process.env.EMAIL}>`,
+    from: `"Grand Oasis" <${senderEmail}>`,
     to,
     subject: "Booking Confirmed | " + hotelName,
     html,

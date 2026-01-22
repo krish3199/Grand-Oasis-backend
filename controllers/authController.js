@@ -102,8 +102,12 @@ exports.forgotPassword = async (req, res) => {
     user.otpExpire = Date.now() + 5 * 60 * 1000;
     await user.save();
 
-    await sendEmail(email, otp);
+    // Send email (non-blocking - don't wait for it)
+    sendEmail(email, otp).catch((err) => {
+      console.error("OTP EMAIL ERROR (non-blocking):", err);
+    });
 
+    // Return response immediately
     res.json({
       success: true,
       message: "OTP sent to email"

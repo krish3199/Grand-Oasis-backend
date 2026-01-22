@@ -138,31 +138,29 @@ exports.cancelBooking = async (req, res) => {
     booking.status = "Cancelled";
     await booking.save();
 
-    // 8️⃣ Send cancellation email (non-blocking for main flow)
-    try {
-      const user = await User.findById(booking.userId);
-      if (user) {
-        const hotelImage =
-          (Array.isArray(room.images) && room.images.length > 0
-            ? room.images[0]
-            : null) || hotel.image;
+    // 8️⃣ Send cancellation email (non-blocking - fire and forget)
+    const user = await User.findById(booking.userId);
+    if (user) {
+      const hotelImage =
+        (Array.isArray(room.images) && room.images.length > 0
+          ? room.images[0]
+          : null) || hotel.image;
 
-        await sendCancellationEmail({
-          to: user.email,
-          userName: user.name,
-          hotelName: hotel.name,
-          city: hotel.city,
-          checkIn: booking.checkIn,
-          checkOut: booking.checkOut,
-          days: booking.days,
-          totalPrice: booking.totalPrice,
-          bookingId: booking._id.toString(),
-          hotelImage,
-        });
-      }
-    } catch (mailErr) {
-      console.error("CANCELLATION EMAIL ERROR:", mailErr);
-      // don't fail cancellation if email fails
+      // Don't await - send response immediately
+      sendCancellationEmail({
+        to: user.email,
+        userName: user.name,
+        hotelName: hotel.name,
+        city: hotel.city,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        days: booking.days,
+        totalPrice: booking.totalPrice,
+        bookingId: booking._id.toString(),
+        hotelImage,
+      }).catch((mailErr) => {
+        console.error("CANCELLATION EMAIL ERROR (non-blocking):", mailErr);
+      });
     }
 
     res.json({

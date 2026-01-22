@@ -7,28 +7,36 @@ const sendEmail = async (email, otp) => {
     return;
   }
 
-  // Extract email from BREVO API key (format: xsmtpsib-...@smtp-relay.brevo.com)
-  // Or use a verified sender email from BREVO dashboard
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@brevo.com";
+  // BREVO SMTP uses: username = SMTP login email, password = SMTP key
+  // SMTP login email is usually the verified sender email in BREVO dashboard
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+  
+  if (!senderEmail) {
+    console.warn("BREVO_SENDER_EMAIL not set, skipping email.");
+    return;
+  }
 
   const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
     port: 587,
     secure: false, // true for 465, false for other ports
     auth: {
-      user: senderEmail,
-      pass: process.env.BREVO_API_KEY, // BREVO API key as password
+      user: senderEmail, // Verified sender email from BREVO
+      pass: process.env.BREVO_API_KEY, // BREVO SMTP API key
     },
+    // Connection timeout
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000,
   });
 
-  await transporter.sendMail({
-    // 🔥 SENDER NAME
-    from: `"Grand Oasis" <${senderEmail}>`,
-
-    to: email,
-
-    // 🔥 Subject
-    subject: 'Reset your password | GRAND OASIS',
+  try {
+    await transporter.sendMail({
+      // 🔥 SENDER NAME
+      from: `"Grand Oasis" <${senderEmail}>`,
+      to: email,
+      // 🔥 Subject
+      subject: 'Reset your password | GRAND OASIS',
 
     // 🔥 PREMIUM UI WITH YOUR EXACT LOGO
     html: `
@@ -76,8 +84,13 @@ const sendEmail = async (email, otp) => {
 
         </div>
       </div>
-    `
-  });
+    `,
+    });
+    console.log(`✅ OTP email sent to ${email}`);
+  } catch (error) {
+    console.error("❌ Email sending failed:", error.message);
+    // Don't throw - email failure shouldn't break the flow
+  }
 };
 
 module.exports = sendEmail;

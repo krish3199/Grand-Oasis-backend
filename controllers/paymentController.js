@@ -126,28 +126,28 @@ exports.verifyPaymentAndCreateBooking = async (req, res) => {
         ? room.images[0]
         : null) || hotel.image;
 
-    // Send confirmation email
-    try {
-      const user = await User.findById(req.userId);
-      if (user) {
-        await sendBookingEmail({
-          to: user.email,
-          userName: user.name,
-          hotelName: hotel.name,
-          city: hotel.city,
-          checkIn: start,
-          checkOut: end,
-          days,
-          totalPrice,
-          bookingId: booking._id.toString(),
-          hotelImage,
-        });
-      }
-    } catch (mailErr) {
-      console.error("BOOKING EMAIL ERROR:", mailErr);
-      // do not fail booking if email fails
+    // Send confirmation email (non-blocking - don't wait for it)
+    // Response immediately, email will send in background
+    const user = await User.findById(req.userId);
+    if (user) {
+      // Fire and forget - don't await, send response immediately
+      sendBookingEmail({
+        to: user.email,
+        userName: user.name,
+        hotelName: hotel.name,
+        city: hotel.city,
+        checkIn: start,
+        checkOut: end,
+        days,
+        totalPrice,
+        bookingId: booking._id.toString(),
+        hotelImage,
+      }).catch((mailErr) => {
+        console.error("BOOKING EMAIL ERROR (non-blocking):", mailErr);
+      });
     }
 
+    // Return response immediately - don't wait for email
     return res.json({
       success: true,
       message: "Payment verified & booking created",

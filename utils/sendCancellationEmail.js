@@ -14,21 +14,24 @@ const sendCancellationEmail = async ({
   hotelImage,
 }) => {
   // BREVO SMTP Configuration
-  if (!process.env.BREVO_API_KEY) {
-    console.warn("BREVO_API_KEY not set, skipping cancellation email.");
+  if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
+    console.warn("BREVO_API_KEY or BREVO_SENDER_EMAIL not set, skipping cancellation email.");
     return;
   }
 
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@brevo.com";
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
 
   const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
     port: 587,
-    secure: false, // true for 465, false for other ports
+    secure: false,
     auth: {
       user: senderEmail,
-      pass: process.env.BREVO_API_KEY, // BREVO API key as password
+      pass: process.env.BREVO_API_KEY,
     },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000,
   });
 
   const formattedCheckIn = checkIn
@@ -137,12 +140,18 @@ const sendCancellationEmail = async ({
   `;
   // --- NEW PREMIUM UI TEMPLATE END ---
 
-  await transporter.sendMail({
-    from: `"Grand Oasis" <${senderEmail}>`,
-    to,
-    subject: "Booking Cancelled | " + (hotelName || "Grand Oasis"),
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"Grand Oasis" <${senderEmail}>`,
+      to,
+      subject: "Booking Cancelled | " + (hotelName || "Grand Oasis"),
+      html,
+    });
+    console.log(`✅ Cancellation email sent to ${to}`);
+  } catch (error) {
+    console.error("❌ Cancellation email sending failed:", error.message);
+    // Don't throw - email failure shouldn't break cancellation
+  }
 };
 
 module.exports = sendCancellationEmail;

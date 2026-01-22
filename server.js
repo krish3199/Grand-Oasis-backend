@@ -20,29 +20,45 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      return callback(null, true);
+    }
     
     // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } 
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
     // Check if origin is a Netlify subdomain
-    else if (origin.endsWith('.netlify.app')) {
-      callback(null, true);
+    if (origin.endsWith('.netlify.app')) {
+      return callback(null, true);
     }
+    
     // Check if origin is a Vercel subdomain
-    else if (origin.endsWith('.vercel.app')) {
-      callback(null, true);
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
     }
-    else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    
+    // Log for debugging
+    console.log('CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  exposedHeaders: ["Set-Cookie"]
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With",
+    "Accept",
+    "Origin"
+  ],
+  exposedHeaders: ["Set-Cookie"],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+// Handle preflight requests explicitly
+app.options('*', cors());
+
 app.use(express.json());
 app.use(cookieParser());
 

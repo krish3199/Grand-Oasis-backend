@@ -10,16 +10,38 @@ connectDB();
 const app = express();
 
 // 🔥 MIDDLEWARE ORDER (IMPORTANT)
+// CORS Configuration with dynamic origin checking
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://grand-oasis.vercel.app",
+  "https://grand-oasis.netlify.app"
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173", 
-    "https://grand-oasis.vercel.app", 
-    "https://grand-oasis.netlify.app",
-    /\.netlify\.app$/,  // All Netlify subdomains
-    /\.vercel\.app$/    // All Vercel subdomains
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } 
+    // Check if origin is a Netlify subdomain
+    else if (origin.endsWith('.netlify.app')) {
+      callback(null, true);
+    }
+    // Check if origin is a Vercel subdomain
+    else if (origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    }
+    else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Set-Cookie"]
 }));
 app.use(express.json());
 app.use(cookieParser());

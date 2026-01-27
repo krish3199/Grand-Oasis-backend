@@ -56,8 +56,8 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
-// Handle preflight requests explicitly
-app.options('*', cors());
+// NOTE: Express v5 + path-to-regexp is strict about wildcard routes.
+// CORS middleware already handles preflight (OPTIONS) when `preflightContinue` is false.
 
 app.use(express.json());
 app.use(cookieParser());
